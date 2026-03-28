@@ -12,7 +12,7 @@ let currentTableId = null;
 let feishuAccessToken = null;
 let manualInputModal, manualTitle, manualAuthor, manualPublishTime, manualNoteType, manualContent, manualLikes, manualCollects, manualShares, manualComments, manualCoverImage;
 let linkColumnTitleInput, scanTableBtn, processAllBtn, manualTableBtn, manualTableModal, manualLinksTextarea;
-let feishuTokenInput, saveFeishuTokenCheckbox;
+let feishuTokenInput, saveFeishuTokenCheckbox, tableIdInput;
 let detectedLinks = [];
 
 // 初始化
@@ -81,6 +81,9 @@ function init() {
   // 飞书授权码输入元素
   feishuTokenInput = document.getElementById('feishuTokenInput');
   saveFeishuTokenCheckbox = document.getElementById('saveFeishuToken');
+  
+  // 表格ID输入元素
+  tableIdInput = document.getElementById('tableIdInput');
 
   // 加载保存的Cookie和授权码
   loadSavedCookie();
@@ -827,15 +830,24 @@ async function scanTableForLinks() {
     // 获取飞书表格数据
     const token = await getFeishuAccessToken();
     
-    // 尝试获取当前文档信息，如果失败则使用默认表格ID
-    let tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
-    try {
-      const docInfo = await getCurrentDocumentInfo();
-      if (docInfo && docInfo.tableId) {
-        tableId = docInfo.tableId;
+    // 优先使用用户输入的表格ID
+    let tableId = tableIdInput?.value?.trim() || '';
+    
+    // 如果用户没有输入表格ID，尝试获取当前文档信息
+    if (!tableId) {
+      try {
+        const docInfo = await getCurrentDocumentInfo();
+        if (docInfo && docInfo.tableId) {
+          tableId = docInfo.tableId;
+        }
+      } catch (docError) {
+        console.log('获取文档信息失败，使用默认表格ID:', docError);
       }
-    } catch (docError) {
-      console.log('获取文档信息失败，使用默认表格ID:', docError);
+    }
+    
+    // 如果仍然没有表格ID，使用默认值
+    if (!tableId) {
+      tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
     }
     
     console.log('使用的表格ID:', tableId);
