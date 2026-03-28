@@ -11,7 +11,7 @@ let currentNoteData = null;
 let currentTableId = null;
 let feishuAccessToken = null;
 let manualInputModal, manualTitle, manualAuthor, manualPublishTime, manualNoteType, manualContent, manualLikes, manualCollects, manualShares, manualComments, manualCoverImage;
-let linkColumnTitleInput, scanTableBtn, processAllBtn;
+let linkColumnTitleInput, scanTableBtn, processAllBtn, manualTableBtn, manualTableModal, manualLinksTextarea;
 let detectedLinks = [];
 
 // 初始化
@@ -76,6 +76,13 @@ function init() {
   linkColumnTitleInput = document.getElementById('linkColumnTitle');
   scanTableBtn = document.getElementById('scanTableBtn');
   processAllBtn = document.getElementById('processAllBtn');
+  manualTableBtn = document.getElementById('manualTableBtn');
+  
+  // 手动输入链接模态框元素
+  manualTableModal = document.getElementById('manualTableModal');
+  manualLinksTextarea = document.getElementById('manualLinks');
+  const processManualLinks = document.getElementById('processManualLinks');
+  const cancelManualTable = document.getElementById('cancelManualTable');
 
   // 加载保存的Cookie
   loadSavedCookie();
@@ -95,6 +102,11 @@ function init() {
   // 绑定表格扫描事件
   if (scanTableBtn) scanTableBtn.addEventListener('click', scanTableForLinks);
   if (processAllBtn) processAllBtn.addEventListener('click', processAllLinks);
+  
+  // 绑定手动输入链接事件
+  if (manualTableBtn) manualTableBtn.addEventListener('click', openManualTableModal);
+  if (processManualLinks) processManualLinks.addEventListener('click', processManualLinksFunc);
+  if (cancelManualTable) cancelManualTable.addEventListener('click', closeManualTableModal);
 }
 
 // 加载保存的Cookie
@@ -589,7 +601,8 @@ async function getFeishuAccessToken() {
           }
         }
       }
-      throw new Error('飞书授权失败，请检查插件权限设置');
+      // 简化错误信息，提供更清晰的指导
+      throw new Error('飞书授权失败，请在飞书插件管理中检查权限设置，确保插件有访问文档和表格的权限');
     } else {
       // 尝试从localStorage获取保存的令牌
       const savedToken = localStorage.getItem('feishu_access_token');
@@ -597,7 +610,7 @@ async function getFeishuAccessToken() {
         feishuAccessToken = savedToken;
         return savedToken;
       }
-      throw new Error('无法获取飞书访问令牌');
+      throw new Error('无法获取飞书访问令牌，请确保在飞书环境中使用此插件');
     }
   } catch (error) {
     console.error('获取飞书访问令牌失败:', error);
@@ -971,6 +984,48 @@ async function syncResultsToTable(results) {
     console.error('同步到表格失败:', error);
     showToast('同步到表格失败: ' + error.message);
   }
+}
+
+// 打开手动输入链接模态框
+function openManualTableModal() {
+  if (manualTableModal) {
+    manualTableModal.style.display = 'block';
+  }
+}
+
+// 关闭手动输入链接模态框
+function closeManualTableModal() {
+  if (manualTableModal) {
+    manualTableModal.style.display = 'none';
+  }
+}
+
+// 处理手动输入的链接
+async function processManualLinksFunc() {
+  const linksText = manualLinksTextarea?.value || '';
+  if (!linksText.trim()) {
+    showToast('请输入小红书链接');
+    return;
+  }
+  
+  // 解析链接列表
+  const links = linksText.split('\n').filter(link => link.trim() && link.includes('xiaohongshu.com'));
+  if (links.length === 0) {
+    showToast('未找到有效的小红书链接');
+    return;
+  }
+  
+  // 更新detectedLinks
+  detectedLinks = links.map((url, index) => ({
+    url: url.trim(),
+    rowIndex: index + 1 // 模拟行索引
+  }));
+  
+  // 关闭模态框
+  closeManualTableModal();
+  
+  // 处理链接
+  await processAllLinks();
 }
 
 // 提取笔记数据
