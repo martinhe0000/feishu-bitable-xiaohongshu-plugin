@@ -11,6 +11,8 @@ let currentNoteData = null;
 let currentTableId = null;
 let feishuAccessToken = null;
 let manualInputModal, manualTitle, manualAuthor, manualPublishTime, manualNoteType, manualContent, manualLikes, manualCollects, manualShares, manualComments, manualCoverImage;
+let linkColumnTitleInput, scanTableBtn, processAllBtn;
+let detectedLinks = [];
 
 // 初始化
 function init() {
@@ -69,6 +71,11 @@ function init() {
   manualShares = document.getElementById('manualShares');
   manualComments = document.getElementById('manualComments');
   manualCoverImage = document.getElementById('manualCoverImage');
+  
+  // 表格扫描相关元素
+  linkColumnTitleInput = document.getElementById('linkColumnTitle');
+  scanTableBtn = document.getElementById('scanTableBtn');
+  processAllBtn = document.getElementById('processAllBtn');
 
   // 加载保存的Cookie
   loadSavedCookie();
@@ -84,6 +91,10 @@ function init() {
   // 绑定复制到剪贴板事件
   const copyToClipboardBtn = document.getElementById('copyToClipboardBtn');
   if (copyToClipboardBtn) copyToClipboardBtn.addEventListener('click', copyToClipboard);
+  
+  // 绑定表格扫描事件
+  if (scanTableBtn) scanTableBtn.addEventListener('click', scanTableForLinks);
+  if (processAllBtn) processAllBtn.addEventListener('click', processAllLinks);
 }
 
 // 加载保存的Cookie
@@ -762,6 +773,204 @@ function copyToClipboard() {
     console.error('复制失败:', err);
     showToast('复制失败，请手动复制');
   });
+}
+
+// 扫描表格中的小红书链接
+async function scanTableForLinks() {
+  showLoading('正在扫描表格...');
+  
+  try {
+    const cookie = cookieInput.value.trim();
+    if (!cookie) {
+      showToast('请先输入小红书Cookie');
+      hideLoading();
+      return;
+    }
+    
+    const linkColumnTitle = linkColumnTitleInput.value.trim();
+    if (!linkColumnTitle) {
+      showToast('请输入链接列标题');
+      hideLoading();
+      return;
+    }
+    
+    // 获取飞书表格数据
+    const token = await getFeishuAccessToken();
+    const docInfo = await getCurrentDocumentInfo();
+    const tableId = docInfo.tableId || 'tbl_7b01b389b51b211c';
+    
+    // 调用飞书API获取表格数据
+    const response = await fetch(`https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API请求失败: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const rows = data.data.values;
+    
+    // 查找链接列
+    let linkColumnIndex = -1;
+    if (rows.length > 0) {
+      const headers = rows[0];
+      linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
+    }
+    
+    if (linkColumnIndex === -1) {
+      showToast(`未找到标题为"${linkColumnTitle}"的列`);
+      hideLoading();
+      return;
+    }
+    
+    // 提取链接
+    detectedLinks = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (row[linkColumnIndex]) {
+        const link = row[linkColumnIndex].trim();
+        if (link.includes('xiaohongshu.com')) {
+          detectedLinks.push({
+            url: link,
+            rowIndex: i
+          });
+        }
+      }
+    }
+    
+    showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
+    console.log('检测到的链接:', detectedLinks);
+  } catch (error) {
+    console.error('扫描表格失败:', error);
+    showToast('扫描表格失败: ' + error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// 处理所有链接
+async function processAllLinks() {
+  if (detectedLinks.length === 0) {
+    showToast('请先扫描表格获取链接');
+    return;
+  }
+  
+  showLoading('正在处理链接...');
+  
+  try {
+    const cookie = cookieInput.value.trim();
+    if (!cookie) {
+      showToast('请先输入小红书Cookie');
+      hideLoading();
+      return;
+    }
+    
+    const selectedContent = getSelectedContent();
+    const results = [];
+    
+    // 逐个处理链接
+    for (let i = 0; i < detectedLinks.length; i++) {
+      const linkItem = detectedLinks[i];
+      updateLoadingMessage(`处理第 ${i + 1} 个链接...`);
+      
+      try {
+        // 解析链接
+        const noteId = parseNoteUrl(linkItem.url);
+        if (!noteId) {
+          results.push({
+            url: linkItem.url,
+            success: false,
+            error: '无法解析链接'
+          });
+          continue;
+        }
+        
+        // 提取数据
+        const noteData = await extractNoteData(noteId, cookie, linkItem.url);
+        results.push({
+          url: linkItem.url,
+          success: true,
+          data: noteData
+        });
+        
+        // 显示第一个结果
+        if (i === 0) {
+          currentNoteData = noteData;
+          showResult(noteData);
+        }
+      } catch (error) {
+        console.error('处理链接失败:', error);
+        results.push({
+          url: linkItem.url,
+          success: false,
+          error: error.message
+        });
+      }
+      
+      // 避免请求过于频繁
+      if (i < detectedLinks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+    
+    // 统计结果
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
+    
+    showToast(`处理完成：成功 ${successCount} 个，失败 ${failureCount} 个`);
+    console.log('处理结果:', results);
+    
+    // 如果有成功的结果，尝试同步到表格
+    if (successCount > 0) {
+      await syncResultsToTable(results);
+    }
+  } catch (error) {
+    console.error('处理链接失败:', error);
+    showToast('处理链接失败: ' + error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// 同步结果到表格
+async function syncResultsToTable(results) {
+  try {
+    const token = await getFeishuAccessToken();
+    const docInfo = await getCurrentDocumentInfo();
+    const tableId = docInfo.tableId || 'tbl_7b01b389b51b211c';
+    
+    const selectedContent = getSelectedContent();
+    const tableKeywords = await getTableKeywords();
+    
+    // 准备要更新的数据
+    const updates = [];
+    
+    results.forEach(result => {
+      if (result.success) {
+        const linkItem = detectedLinks.find(item => item.url === result.url);
+        if (linkItem) {
+          const mappedData = mapDataToTable(result.data, selectedContent, tableKeywords);
+          updates.push({
+            rowIndex: linkItem.rowIndex,
+            data: mappedData
+          });
+        }
+      }
+    });
+    
+    // 调用飞书API更新表格
+    // 这里需要根据飞书API的具体要求实现
+    console.log('准备同步到表格的数据:', updates);
+    showToast(`已准备 ${updates.length} 条数据同步到表格`);
+  } catch (error) {
+    console.error('同步到表格失败:', error);
+    showToast('同步到表格失败: ' + error.message);
+  }
 }
 
 // 提取笔记数据
