@@ -3,14 +3,12 @@
 // DOM 元素引用
 let noteUrlInput, importBtn, clearBtn, loadingSection, resultSection;
 let resultTitle, resultAuthor, resultTime, resultContent, resultLikes, resultCollects, resultComments, resultNoteType, resultCoverImage;
-let openDocBtn, toast, configToggle, toggleSwitch, configPanel, saveConfigBtn;
-let feishuAppId, feishuAppToken, feishuTableId, cookieInput, tableInput;
+let openDocBtn, toast, cookieInput, tableInput;
 let selectAllBtn, selectTitle, selectAuthor, selectPublishTime, selectNoteType, selectCoverImage, selectContent, selectLikes, selectCollects, selectShares, selectComments;
 
 // 全局变量
 let currentNoteData = null;
-let currentDocId = null;
-let feishuConfig = null;
+let currentTableId = null;
 
 // 初始化
 function init() {
@@ -34,15 +32,6 @@ function init() {
   openDocBtn = document.getElementById('openDocBtn');
   toast = document.getElementById('toast');
   
-  // 配置面板
-  configToggle = document.getElementById('configToggle');
-  toggleSwitch = document.getElementById('toggleSwitch');
-  configPanel = document.getElementById('configPanel');
-  saveConfigBtn = document.getElementById('saveConfigBtn');
-  feishuAppId = document.getElementById('feishuAppId');
-  feishuAppToken = document.getElementById('feishuAppToken');
-  feishuTableId = document.getElementById('feishuTableId');
-  
   // Cookie输入
   cookieInput = document.getElementById('cookieInput');
   
@@ -64,9 +53,6 @@ function init() {
 
   // 绑定事件
   bindEvents();
-  
-  // 加载配置
-  loadConfig();
 }
 
 // 绑定事件
@@ -75,10 +61,6 @@ function bindEvents() {
   if (clearBtn) clearBtn.addEventListener('click', clearInput);
   if (openDocBtn) openDocBtn.addEventListener('click', openDocument);
   if (noteUrlInput) noteUrlInput.addEventListener('paste', handlePaste);
-  
-  // 配置面板
-  if (configToggle) configToggle.addEventListener('click', toggleConfigPanel);
-  if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfig);
   
   // 全选功能
   if (selectAllBtn) selectAllBtn.addEventListener('click', toggleSelectAll);
@@ -138,51 +120,7 @@ function clearInput() {
   if (tableInput) tableInput.value = '';
   if (resultSection) resultSection.style.display = 'none';
   currentNoteData = null;
-  currentDocId = null;
-}
-
-// 切换配置面板
-function toggleConfigPanel() {
-  if (toggleSwitch) toggleSwitch.classList.toggle('active');
-  if (configPanel) configPanel.classList.toggle('show');
-}
-
-// 保存配置
-function saveConfig() {
-  const config = {
-    appId: feishuAppId ? feishuAppId.value.trim() : '',
-    appToken: feishuAppToken ? feishuAppToken.value.trim() : '',
-    tableId: feishuTableId ? feishuTableId.value.trim() : ''
-  };
-  
-  if (!config.appId || !config.appToken || !config.tableId) {
-    showToast('请填写所有配置项');
-    return;
-  }
-  
-  try {
-    localStorage.setItem('feishuConfig', JSON.stringify(config));
-    feishuConfig = config;
-    showToast('配置保存成功！');
-  } catch (error) {
-    console.error('保存配置失败:', error);
-    showToast('保存配置失败');
-  }
-}
-
-// 加载配置
-function loadConfig() {
-  try {
-    const config = localStorage.getItem('feishuConfig');
-    if (config) {
-      feishuConfig = JSON.parse(config);
-      if (feishuAppId) feishuAppId.value = feishuConfig.appId || '';
-      if (feishuAppToken) feishuAppToken.value = feishuConfig.appToken || '';
-      if (feishuTableId) feishuTableId.value = feishuConfig.tableId || '';
-    }
-  } catch (error) {
-    console.log('加载配置失败:', error);
-  }
+  currentTableId = null;
 }
 
 // 切换全选
@@ -268,32 +206,77 @@ async function extractNoteData(noteId, cookie) {
   };
 }
 
-// 创建飞书文档并导入数据
-async function createFeishuDocument(data, selectedContent, tablePosition) {
+// 模拟获取飞书表格的关键词
+async function getTableKeywords(tablePosition) {
+  // 实际项目中，这里应该调用飞书API获取表格的列标题
+  // 这里使用模拟数据
+  return [
+    '标题', '作者', '发布时间', '笔记类型', '封面链接', '文案内容', '点赞', '收藏', '转发', '评论'
+  ];
+}
+
+// 自动根据表格关键词填充数据
+function mapDataToTable(data, selectedContent, tableKeywords) {
+  const mappedData = {};
+  
+  // 关键词映射
+  const keywordMap = {
+    '标题': 'title',
+    '作者': 'author',
+    '发布时间': 'publishTime',
+    '笔记类型': 'noteType',
+    '封面链接': 'coverImage',
+    '文案内容': 'content',
+    '点赞': 'likes',
+    '收藏': 'collects',
+    '转发': 'shares',
+    '评论': 'comments'
+  };
+  
+  // 根据表格关键词和用户选择的内容映射数据
+  tableKeywords.forEach(keyword => {
+    const field = keywordMap[keyword];
+    if (field && selectedContent[field]) {
+      mappedData[keyword] = data[field] || '';
+    }
+  });
+  
+  return mappedData;
+}
+
+// 导入数据到飞书表格
+async function importToFeishuTable(data, selectedContent, tablePosition) {
   try {
-    // 实际项目中，这里应该调用飞书API创建文档
+    // 获取表格关键词
+    showToast('正在获取表格信息...');
+    const tableKeywords = await getTableKeywords(tablePosition);
+    
+    // 映射数据到表格
+    showToast('正在映射数据...');
+    const mappedData = mapDataToTable(data, selectedContent, tableKeywords);
+    
+    // 实际项目中，这里应该调用飞书API导入数据
     // 这里使用模拟数据
-    const docId = 'doc_' + Date.now();
-    console.log('创建飞书文档:', docId);
-    console.log('导入数据:', data);
-    console.log('选择的内容:', selectedContent);
+    const tableId = 'table_' + Date.now();
+    console.log('导入到飞书表格:', tableId);
+    console.log('映射后的数据:', mappedData);
     console.log('表格位置:', tablePosition);
-    return docId;
+    return tableId;
   } catch (error) {
-    console.error('创建飞书文档失败:', error);
+    console.error('导入到飞书表格失败:', error);
     throw error;
   }
 }
 
-// 打开飞书文档
+// 打开飞书表格
 function openDocument() {
-  if (!currentDocId) {
+  if (!currentTableId) {
     showToast('请先导入数据');
     return;
   }
   
-  // 实际项目中，这里应该打开飞书文档
-  showToast('打开飞书文档: ' + currentDocId);
+  // 实际项目中，这里应该打开飞书表格
+  showToast('打开飞书表格: ' + currentTableId);
 }
 
 // 导入笔记
@@ -341,10 +324,10 @@ async function importNote() {
     const noteData = await extractNoteData(noteId, cookie);
     currentNoteData = noteData;
     
-    // 创建飞书文档
-    showToast('正在创建飞书文档...');
-    const docId = await createFeishuDocument(noteData, selectedContent, tablePosition);
-    currentDocId = docId;
+    // 导入到飞书表格
+    showToast('正在导入到飞书表格...');
+    const tableId = await importToFeishuTable(noteData, selectedContent, tablePosition);
+    currentTableId = tableId;
     
     // 显示结果
     showResult(noteData);

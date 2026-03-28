@@ -43,145 +43,57 @@
       font-size: 12px;
     }
 
-    /* 配置面板 */
-    .config-section {
-      margin-bottom: 16px;
-      padding: 12px;
-      background: #f0f5ff;
-      border-radius: 8px;
-      border: 1px solid #d6e4ff;
-    }
-
-    .config-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      margin-bottom: 12px;
-    }
-
-    .config-toggle span {
-      font-size: 13px;
-      color: #3370ff;
-      font-weight: 500;
-    }
-
-    .toggle-switch {
-      width: 40px;
-      height: 20px;
-      background: #ccc;
-      border-radius: 10px;
-      position: relative;
-      transition: all 0.3s;
-    }
-
-    .toggle-switch.active {
-      background: #3370ff;
-    }
-
-    .toggle-switch::after {
-      content: '';
-      position: absolute;
-      width: 16px;
-      height: 16px;
-      background: white;
-      border-radius: 50%;
-      top: 2px;
-      left: 2px;
-      transition: all 0.3s;
-    }
-
-    .toggle-switch.active::after {
-      left: 22px;
-    }
-
-    .config-panel {
-      display: none;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px dashed #d6e4ff;
-    }
-
-    .config-panel.show {
-      display: block;
-    }
-
-    .config-input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 6px;
-      font-size: 12px;
-      margin-bottom: 8px;
-      transition: all 0.3s;
-    }
-
-    .config-input:focus {
-      outline: none;
-      border-color: #3370ff;
-      box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.2);
-    }
-
-    .config-input::placeholder {
-      color: #bfbfbf;
-    }
-
-    .config-note {
-      font-size: 11px;
-      color: #999;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-
-    /* 链接输入 */
-    .input-section {
+    /* 输入区域 */
+    .input-section,
+    .cookie-section,
+    .table-section {
       margin-bottom: 16px;
     }
 
     .input-label {
       display: block;
-      font-size: 13px;
-      color: #666;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
       margin-bottom: 8px;
-      font-weight: 500;
     }
 
-    .url-input {
+    .url-input,
+    .table-input {
       width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 8px;
-      font-size: 13px;
-      transition: all 0.3s;
-    }
-
-    .url-input:focus {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
       outline: none;
-      border-color: #ff2442;
-      box-shadow: 0 0 0 2px rgba(255, 36, 66, 0.2);
+      transition: border-color 0.3s;
     }
 
-    /* Cookie输入 */
-    .cookie-section {
-      margin-bottom: 16px;
+    .url-input:focus,
+    .table-input:focus {
+      border-color: #ff2442;
     }
 
     .cookie-textarea {
       width: 100%;
-      height: 80px;
-      padding: 10px 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 8px;
-      font-size: 12px;
-      font-family: monospace;
-      resize: none;
-      transition: all 0.3s;
+      height: 100px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s;
     }
 
     .cookie-textarea:focus {
-      outline: none;
       border-color: #ff2442;
-      box-shadow: 0 0 0 2px rgba(255, 36, 66, 0.2);
+    }
+
+    .config-note {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
     }
 
     /* 内容选择 */
@@ -191,71 +103,53 @@
 
     .selection-header {
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
     }
 
     .selection-title {
-      font-size: 13px;
-      color: #666;
-      font-weight: 500;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
     }
 
     .select-all-btn {
-      font-size: 12px;
-      color: #3370ff;
-      cursor: pointer;
-      background: none;
+      padding: 4px 12px;
+      background: #f0f0f0;
       border: none;
-      padding: 2px 6px;
       border-radius: 4px;
-      transition: all 0.3s;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
     }
 
     .select-all-btn:hover {
-      background: rgba(51, 112, 255, 0.1);
+      background: #e0e0e0;
     }
 
     .selection-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px;
+      max-height: 200px;
+      overflow-y: auto;
     }
 
     .selection-item {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #333;
+      padding: 6px 0;
     }
 
     .selection-item input[type="checkbox"] {
-      width: 14px;
-      height: 14px;
+      margin-right: 8px;
+    }
+
+    .selection-item label {
+      font-size: 14px;
+      color: #333;
       cursor: pointer;
-    }
-
-    /* 表格输入 */
-    .table-section {
-      margin-bottom: 16px;
-    }
-
-    .table-input {
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #d9d9d9;
-      border-radius: 6px;
-      font-size: 12px;
-      margin-bottom: 8px;
-      transition: all 0.3s;
-    }
-
-    .table-input:focus {
-      outline: none;
-      border-color: #3370ff;
-      box-shadow: 0 0 0 2px rgba(51, 112, 255, 0.2);
     }
 
     /* 按钮 */
@@ -263,12 +157,12 @@
       width: 100%;
       padding: 12px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     .btn-primary {
@@ -277,16 +171,7 @@
     }
 
     .btn-primary:hover {
-      background: #ff4d6a;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(255, 36, 66, 0.3);
-    }
-
-    .btn-primary:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+      background: #e01e3c;
     }
 
     .btn-secondary {
@@ -295,24 +180,29 @@
     }
 
     .btn-secondary:hover {
-      background: #e8e8e8;
+      background: #e0e0e0;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     /* 加载状态 */
     .loading {
+      display: none;
       text-align: center;
       padding: 20px;
-      display: none;
     }
 
     .loading-spinner {
-      width: 30px;
-      height: 30px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #ff2442;
+      width: 24px;
+      height: 24px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #ff2442;
       border-radius: 50%;
       animation: spin 1s linear infinite;
-      margin: 0 auto 10px;
+      margin: 0 auto 8px;
     }
 
     @keyframes spin {
@@ -320,78 +210,67 @@
       100% { transform: rotate(360deg); }
     }
 
+    .loading p {
+      font-size: 14px;
+      color: #666;
+    }
+
     /* 结果区域 */
     .result-section {
-      margin-top: 16px;
       display: none;
+      margin-top: 16px;
     }
 
     .result-card {
-      background: #fafafa;
+      background: #f9f9f9;
       border-radius: 8px;
       padding: 12px;
-      margin-bottom: 10px;
-      border: 1px solid #f0f0f0;
+      margin-bottom: 12px;
     }
 
     .result-item {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      padding: 6px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .result-item:last-child {
-      border-bottom: none;
+      margin-bottom: 8px;
     }
 
     .result-label {
-      font-size: 12px;
-      color: #999;
-      min-width: 60px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
     }
 
     .result-value {
-      font-size: 12px;
-      color: #333;
-      text-align: right;
-      word-break: break-all;
-      flex: 1;
-      margin-left: 10px;
+      font-size: 14px;
+      color: #666;
+      word-break: break-word;
     }
 
     .content-box {
-      background: white;
-      border: 1px solid #e8e8e8;
-      border-radius: 6px;
-      padding: 8px;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
       margin-top: 8px;
-      max-height: 80px;
-      overflow-y: auto;
-      font-size: 12px;
-      line-height: 1.4;
-      color: #333;
+      word-break: break-word;
     }
 
-    /* 提示 */
+    /* Toast 提示 */
     .toast {
       position: fixed;
-      bottom: 20px;
+      top: 20px;
       left: 50%;
-      transform: translateX(-50%) translateY(100px);
+      transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.8);
       color: white;
       padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 12px;
+      border-radius: 4px;
+      font-size: 14px;
       opacity: 0;
-      transition: all 0.3s;
+      transition: opacity 0.3s;
       z-index: 1000;
     }
 
     .toast.show {
-      transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
   </style>
@@ -400,37 +279,14 @@
   <div class="container">
     <div class="header">
       <h1>🍠 贺校长的小红书助手</h1>
-      <p>通过链接导入笔记到飞书文档</p>
+      <p>通过链接导入笔记到飞书表格</p>
     </div>
 
-    <!-- 配置面板 -->
-    <div class="config-section">
-      <div class="config-toggle" id="configToggle">
-        <span>⚙️ 飞书配置</span>
-        <div class="toggle-switch" id="toggleSwitch"></div>
-      </div>
-      
-      <div class="config-panel" id="configPanel">
-        <div class="config-note">
-          <strong>配置说明：</strong><br>
-          • App ID: 飞书应用的App ID (cli_xxx)<br>
-          • App Token: 多维表格的App Token (bascnxxx)<br>
-          • Table ID: 表格ID (tblxxx)
-        </div>
-        <input type="text" class="config-input" id="feishuAppId" placeholder="App ID (cli_xxx)">
-        <input type="text" class="config-input" id="feishuAppToken" placeholder="App Token (bascnxxx)">
-        <input type="text" class="config-input" id="feishuTableId" placeholder="Table ID (tblxxx)">
-        <button class="btn btn-secondary" id="saveConfigBtn" style="margin-bottom: 0;">保存配置</button>
-      </div>
-    </div>
-
-    <!-- 链接输入 -->
     <div class="input-section">
       <label class="input-label" for="noteUrl">小红书笔记链接</label>
       <input type="text" id="noteUrl" class="url-input" placeholder="请粘贴小红书笔记链接">
     </div>
 
-    <!-- Cookie输入 -->
     <div class="cookie-section">
       <label class="input-label" for="cookieInput">小红书Cookie</label>
       <textarea id="cookieInput" class="cookie-textarea" placeholder="请粘贴小红书Cookie"></textarea>
@@ -439,7 +295,6 @@
       </div>
     </div>
 
-    <!-- 内容选择 -->
     <div class="content-selection">
       <div class="selection-header">
         <span class="selection-title">选择提取内容</span>
@@ -489,7 +344,6 @@
       </div>
     </div>
 
-    <!-- 表格输入 -->
     <div class="table-section">
       <label class="input-label" for="tableInput">表格位置</label>
       <input type="text" id="tableInput" class="table-input" placeholder="例如：Sheet1!A1">
@@ -498,22 +352,19 @@
       </div>
     </div>
 
-    <!-- 操作按钮 -->
     <button class="btn btn-primary" id="importBtn">
-      📥 导入到飞书文档
+      📥 导入到飞书表格
     </button>
 
     <button class="btn btn-secondary" id="clearBtn">
       🗑️ 清空
     </button>
 
-    <!-- 加载状态 -->
     <div class="loading" id="loadingSection">
       <div class="loading-spinner"></div>
       <p>正在导入数据...</p>
     </div>
 
-    <!-- 结果区域 -->
     <div class="result-section" id="resultSection">
       <div class="result-card">
         <div class="result-item">
@@ -567,7 +418,7 @@
       </div>
 
       <button class="btn btn-primary" id="openDocBtn" style="margin-top: 10px;">
-        📄 打开飞书文档
+        📄 打开飞书表格
       </button>
     </div>
   </div>
