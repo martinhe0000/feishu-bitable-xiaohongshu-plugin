@@ -301,6 +301,7 @@ async function extractNoteData(noteId, cookie, noteUrl) {
     let response;
     let lastError;
     
+    // 尝试使用浏览器的fetch API
     for (const apiUrl of apiUrls) {
       try {
         console.log('发送请求到小红书API:', apiUrl);
@@ -323,6 +324,42 @@ async function extractNoteData(noteId, cookie, noteUrl) {
         console.error('请求失败:', error);
         lastError = error;
         continue;
+      }
+    }
+
+    // 如果浏览器fetch失败，尝试使用飞书插件的网络请求API
+    if (!response || !response.ok) {
+      console.log('尝试使用飞书插件的网络请求API');
+      if (window.lark && window.lark.http) {
+        try {
+          for (const apiUrl of apiUrls) {
+            try {
+              console.log('使用飞书API发送请求:', apiUrl);
+              const larkResponse = await window.lark.http.request({
+                url: apiUrl,
+                method: 'GET',
+                headers: headers,
+                timeout: 10000
+              });
+              
+              console.log('飞书API响应:', larkResponse);
+              
+              if (larkResponse.code === 0) {
+                // 模拟fetch响应
+                response = {
+                  ok: true,
+                  json: async () => larkResponse.data
+                };
+                break;
+              }
+            } catch (error) {
+              console.error('飞书API请求失败:', error);
+              continue;
+            }
+          }
+        } catch (error) {
+          console.error('飞书API调用失败:', error);
+        }
       }
     }
 
