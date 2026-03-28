@@ -187,23 +187,57 @@ function parseNoteUrl(url) {
   return null;
 }
 
-// 模拟提取小红书笔记数据
+// 提取小红书笔记数据
 async function extractNoteData(noteId, cookie) {
-  // 实际项目中，这里应该使用cookie调用小红书API或使用爬虫提取数据
-  // 这里使用模拟数据
-  return {
-    title: '测试笔记标题',
-    author: '测试作者',
-    publishTime: '2024-01-01',
-    noteType: '图文笔记',
-    content: '这是测试笔记的文案内容，包含丰富的信息和描述。',
-    likes: '1000',
-    collects: '500',
-    shares: '200',
-    comments: '100',
-    coverImage: 'https://example.com/cover.jpg',
-    url: `https://xiaohongshu.com/note/${noteId}`
-  };
+  try {
+    // 构建请求头
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cookie': cookie,
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Referer': `https://www.xiaohongshu.com/note/${noteId}`,
+      'X-Requested-With': 'XMLHttpRequest'
+    };
+
+    // 发送请求到小红书API
+    const response = await fetch(`https://www.xiaohongshu.com/api/sns/web/v1/feed?note_ids=${noteId}`, {
+      method: 'GET',
+      headers: headers,
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    // 检查响应数据结构
+    if (!data.data || !data.data.items || data.data.items.length === 0) {
+      throw new Error('无法获取笔记数据');
+    }
+
+    const note = data.data.items[0].note;
+    
+    // 提取数据
+    return {
+      title: note.title || '无标题',
+      author: note.user.nickname || '未知作者',
+      publishTime: new Date(note.time * 1000).toISOString().split('T')[0] || '未知时间',
+      noteType: note.type === 1 ? '图文笔记' : note.type === 2 ? '视频笔记' : '未知类型',
+      content: note.desc || '无内容',
+      likes: note.likes || '0',
+      collects: note.collects || '0',
+      shares: note.shares || '0',
+      comments: note.comments || '0',
+      coverImage: note.cover?.url || note.images?.[0]?.url || '无',
+      url: `https://xiaohongshu.com/note/${noteId}`
+    };
+  } catch (error) {
+    console.error('提取小红书数据失败:', error);
+    // 如果API请求失败，返回错误信息
+    throw new Error(`提取数据失败: ${error.message}`);
+  }
 }
 
 // 模拟获取飞书表格的关键词
