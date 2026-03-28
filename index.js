@@ -143,8 +143,6 @@ function showResult(data) {
 // 清空输入
 function clearInput() {
   if (noteUrlInput) noteUrlInput.value = '';
-  if (cookieInput) cookieInput.value = '';
-  if (tableInput) tableInput.value = '';
   if (resultSection) resultSection.style.display = 'none';
   currentNoteData = null;
   currentTableId = null;
