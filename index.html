@@ -377,9 +377,78 @@
       📤 提取数据
     </button>
 
+    <button class="btn btn-secondary" id="manualInputBtn">
+      ✏️ 手动输入
+    </button>
+
     <button class="btn btn-secondary" id="clearBtn">
       🗑️ 清空
     </button>
+
+    <!-- 手动输入模态框 -->
+    <div id="manualInputModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 300px;">
+        <h3 style="margin-bottom: 16px; color: #ff2442;">手动输入数据</h3>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">标题</label>
+          <input type="text" id="manualTitle" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">作者</label>
+          <input type="text" id="manualAuthor" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">发布时间</label>
+          <input type="date" id="manualPublishTime" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">笔记类型</label>
+          <select id="manualNoteType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <option value="图文笔记">图文笔记</option>
+            <option value="视频笔记">视频笔记</option>
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">文案内容</label>
+          <textarea id="manualContent" style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">点赞</label>
+          <input type="number" id="manualLikes" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="0">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">收藏</label>
+          <input type="number" id="manualCollects" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="0">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">转发</label>
+          <input type="number" id="manualShares" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="0">
+        </div>
+        
+        <div style="margin-bottom: 12px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">评论</label>
+          <input type="number" id="manualComments" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" value="0">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; margin-bottom: 4px; font-size: 14px;">封面链接</label>
+          <input type="text" id="manualCoverImage" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        
+        <div style="display: flex; gap: 8px;">
+          <button id="saveManualData" class="btn btn-primary" style="flex: 1;">保存</button>
+          <button id="cancelManualInput" class="btn btn-secondary" style="flex: 1;">取消</button>
+        </div>
+      </div>
+    </div>
 
     <div class="loading" id="loadingSection">
       <div class="loading-spinner"></div>

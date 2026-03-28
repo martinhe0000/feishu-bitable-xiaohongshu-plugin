@@ -10,6 +10,7 @@ let selectAllBtn, selectTitle, selectAuthor, selectPublishTime, selectNoteType, 
 let currentNoteData = null;
 let currentTableId = null;
 let feishuAccessToken = null;
+let manualInputModal, manualTitle, manualAuthor, manualPublishTime, manualNoteType, manualContent, manualLikes, manualCollects, manualShares, manualComments, manualCoverImage;
 
 // 初始化
 function init() {
@@ -51,11 +52,34 @@ function init() {
   selectShares = document.getElementById('selectShares');
   selectComments = document.getElementById('selectComments');
 
+  // 手动输入相关元素
+  const manualInputBtn = document.getElementById('manualInputBtn');
+  manualInputModal = document.getElementById('manualInputModal');
+  const saveManualData = document.getElementById('saveManualData');
+  const cancelManualInput = document.getElementById('cancelManualInput');
+  
+  // 手动输入表单元素
+  manualTitle = document.getElementById('manualTitle');
+  manualAuthor = document.getElementById('manualAuthor');
+  manualPublishTime = document.getElementById('manualPublishTime');
+  manualNoteType = document.getElementById('manualNoteType');
+  manualContent = document.getElementById('manualContent');
+  manualLikes = document.getElementById('manualLikes');
+  manualCollects = document.getElementById('manualCollects');
+  manualShares = document.getElementById('manualShares');
+  manualComments = document.getElementById('manualComments');
+  manualCoverImage = document.getElementById('manualCoverImage');
+
   // 加载保存的Cookie
   loadSavedCookie();
 
   // 绑定事件
   bindEvents();
+  
+  // 绑定手动输入事件
+  if (manualInputBtn) manualInputBtn.addEventListener('click', openManualInputModal);
+  if (saveManualData) saveManualData.addEventListener('click', saveManualDataFunc);
+  if (cancelManualInput) cancelManualInput.addEventListener('click', closeManualInputModal);
 }
 
 // 加载保存的Cookie
@@ -595,6 +619,57 @@ function openDocument() {
   
   // 实际项目中，这里应该打开飞书表格
   showToast('打开飞书表格: ' + currentTableId);
+}
+
+// 打开手动输入模态框
+function openManualInputModal() {
+  if (manualInputModal) {
+    // 设置默认日期为今天
+    const today = new Date().toISOString().split('T')[0];
+    if (manualPublishTime) manualPublishTime.value = today;
+    
+    manualInputModal.style.display = 'block';
+  }
+}
+
+// 关闭手动输入模态框
+function closeManualInputModal() {
+  if (manualInputModal) {
+    manualInputModal.style.display = 'none';
+  }
+}
+
+// 保存手动输入的数据
+function saveManualDataFunc() {
+  const noteUrl = noteUrlInput.value.trim();
+  
+  if (!noteUrl) {
+    showToast('请先输入小红书笔记链接');
+    return;
+  }
+  
+  // 收集手动输入的数据
+  const manualData = {
+    title: manualTitle?.value || '无标题',
+    author: manualAuthor?.value || '未知作者',
+    publishTime: manualPublishTime?.value || '未知时间',
+    noteType: manualNoteType?.value || '图文笔记',
+    content: manualContent?.value || '无内容',
+    likes: manualLikes?.value || '0',
+    collects: manualCollects?.value || '0',
+    shares: manualShares?.value || '0',
+    comments: manualComments?.value || '0',
+    coverImage: manualCoverImage?.value || '无',
+    url: noteUrl
+  };
+  
+  // 保存数据并显示结果
+  currentNoteData = manualData;
+  showResult(manualData);
+  showToast('手动输入数据成功！');
+  
+  // 关闭模态框
+  closeManualInputModal();
 }
 
 // 提取笔记数据
