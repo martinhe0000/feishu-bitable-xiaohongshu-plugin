@@ -80,6 +80,10 @@ function init() {
   if (manualInputBtn) manualInputBtn.addEventListener('click', openManualInputModal);
   if (saveManualData) saveManualData.addEventListener('click', saveManualDataFunc);
   if (cancelManualInput) cancelManualInput.addEventListener('click', closeManualInputModal);
+  
+  // 绑定复制到剪贴板事件
+  const copyToClipboardBtn = document.getElementById('copyToClipboardBtn');
+  if (copyToClipboardBtn) copyToClipboardBtn.addEventListener('click', copyToClipboard);
 }
 
 // 加载保存的Cookie
@@ -537,10 +541,44 @@ async function getFeishuAccessToken() {
     // 这里应该使用飞书开发者平台的App ID和App Secret
     // 由于这是插件环境，我们尝试从飞书插件API获取
     if (window.lark) {
-      // 使用飞书插件SDK获取访问令牌
-      const token = await window.lark.auth.getTenantToken();
-      feishuAccessToken = token;
-      return token;
+      // 检查是否有授权
+      if (window.lark.auth) {
+        try {
+          // 尝试获取用户访问令牌
+          const userToken = await window.lark.auth.getUserToken();
+          if (userToken) {
+            feishuAccessToken = userToken;
+            return userToken;
+          }
+        } catch (userError) {
+          console.log('获取用户令牌失败，尝试获取租户令牌:', userError);
+        }
+        
+        // 尝试获取租户访问令牌
+        try {
+          const tenantToken = await window.lark.auth.getTenantToken();
+          feishuAccessToken = tenantToken;
+          return tenantToken;
+        } catch (tenantError) {
+          console.log('获取租户令牌失败，尝试请求授权:', tenantError);
+          
+          // 请求授权
+          if (window.lark.auth.requestAuth) {
+            try {
+              const authResult = await window.lark.auth.requestAuth({
+                scopes: ['docs:document', 'sheets:spreadsheet']
+              });
+              if (authResult && authResult.token) {
+                feishuAccessToken = authResult.token;
+                return authResult.token;
+              }
+            } catch (authError) {
+              console.error('请求授权失败:', authError);
+            }
+          }
+        }
+      }
+      throw new Error('飞书授权失败，请检查插件权限设置');
     } else {
       // 尝试从localStorage获取保存的令牌
       const savedToken = localStorage.getItem('feishu_access_token');
@@ -670,6 +708,60 @@ function saveManualDataFunc() {
   
   // 关闭模态框
   closeManualInputModal();
+}
+
+// 复制到剪贴板
+function copyToClipboard() {
+  if (!currentNoteData) {
+    showToast('请先提取或手动输入数据');
+    return;
+  }
+  
+  // 获取用户选择的内容
+  const selectedContent = getSelectedContent();
+  
+  // 准备要复制的数据
+  const data = currentNoteData;
+  const rows = [];
+  
+  // 添加表头
+  const headers = [];
+  if (selectedContent.title) headers.push('标题');
+  if (selectedContent.author) headers.push('作者');
+  if (selectedContent.publishTime) headers.push('发布时间');
+  if (selectedContent.noteType) headers.push('笔记类型');
+  if (selectedContent.coverImage) headers.push('封面链接');
+  if (selectedContent.content) headers.push('文案内容');
+  if (selectedContent.likes) headers.push('点赞');
+  if (selectedContent.collects) headers.push('收藏');
+  if (selectedContent.shares) headers.push('转发');
+  if (selectedContent.comments) headers.push('评论');
+  rows.push(headers.join('\t'));
+  
+  // 添加数据行
+  const values = [];
+  if (selectedContent.title) values.push(data.title);
+  if (selectedContent.author) values.push(data.author);
+  if (selectedContent.publishTime) values.push(data.publishTime);
+  if (selectedContent.noteType) values.push(data.noteType);
+  if (selectedContent.coverImage) values.push(data.coverImage);
+  if (selectedContent.content) values.push(data.content);
+  if (selectedContent.likes) values.push(data.likes);
+  if (selectedContent.collects) values.push(data.collects);
+  if (selectedContent.shares) values.push(data.shares);
+  if (selectedContent.comments) values.push(data.comments);
+  rows.push(values.join('\t'));
+  
+  // 合并为一个字符串
+  const textToCopy = rows.join('\n');
+  
+  // 复制到剪贴板
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    showToast('数据已复制到剪贴板，可以直接粘贴到飞书表格');
+  }).catch(err => {
+    console.error('复制失败:', err);
+    showToast('复制失败，请手动复制');
+  });
 }
 
 // 提取笔记数据
