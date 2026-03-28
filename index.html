@@ -96,6 +96,23 @@
       margin-top: 4px;
     }
 
+    .cookie-save-option {
+      display: flex;
+      align-items: center;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .cookie-save-option input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    .cookie-save-option label {
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+    }
+
     /* 内容选择 */
     .content-selection {
       margin-bottom: 16px;
@@ -290,6 +307,10 @@
     <div class="cookie-section">
       <label class="input-label" for="cookieInput">小红书Cookie</label>
       <textarea id="cookieInput" class="cookie-textarea" placeholder="请粘贴小红书Cookie"></textarea>
+      <div class="cookie-save-option">
+        <input type="checkbox" id="saveCookie" checked>
+        <label for="saveCookie">保存Cookie，下次无需重新输入</label>
+      </div>
       <div class="config-note">
         提示：Cookie用于提取小红书数据，确保包含a1、webId等重要字段
       </div>
@@ -346,8 +367,8 @@
 
 
 
-    <button class="btn btn-primary" id="importBtn">
-      📥 导入到飞书表格
+    <button class="btn btn-primary" id="extractBtn">
+      📤 提取数据
     </button>
 
     <button class="btn btn-secondary" id="clearBtn">
@@ -411,7 +432,11 @@
         </div>
       </div>
 
-      <button class="btn btn-primary" id="openDocBtn" style="margin-top: 10px;">
+      <button class="btn btn-primary" id="syncBtn" style="margin-top: 10px;">
+        📥 同步到表格
+      </button>
+
+      <button class="btn btn-secondary" id="openDocBtn" style="margin-top: 8px;">
         📄 打开飞书表格
       </button>
     </div>

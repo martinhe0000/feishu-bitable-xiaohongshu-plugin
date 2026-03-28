@@ -1,9 +1,9 @@
 // 贺校长的小红书助手 - 飞书多维表格边栏插件
 
 // DOM 元素引用
-let noteUrlInput, importBtn, clearBtn, loadingSection, resultSection;
+let noteUrlInput, extractBtn, syncBtn, clearBtn, loadingSection, resultSection;
 let resultTitle, resultAuthor, resultTime, resultContent, resultLikes, resultCollects, resultComments, resultNoteType, resultCoverImage;
-let openDocBtn, toast, cookieInput, tableInput;
+let openDocBtn, toast, cookieInput, saveCookieCheckbox;
 let selectAllBtn, selectTitle, selectAuthor, selectPublishTime, selectNoteType, selectCoverImage, selectContent, selectLikes, selectCollects, selectShares, selectComments;
 
 // 全局变量
@@ -14,7 +14,8 @@ let currentTableId = null;
 function init() {
   // 获取DOM元素
   noteUrlInput = document.getElementById('noteUrl');
-  importBtn = document.getElementById('importBtn');
+  extractBtn = document.getElementById('extractBtn');
+  syncBtn = document.getElementById('syncBtn');
   clearBtn = document.getElementById('clearBtn');
   loadingSection = document.getElementById('loadingSection');
   resultSection = document.getElementById('resultSection');
@@ -34,6 +35,7 @@ function init() {
   
   // Cookie输入
   cookieInput = document.getElementById('cookieInput');
+  saveCookieCheckbox = document.getElementById('saveCookie');
   
   // 内容选择
   selectAllBtn = document.getElementById('selectAllBtn');
@@ -47,9 +49,6 @@ function init() {
   selectCollects = document.getElementById('selectCollects');
   selectShares = document.getElementById('selectShares');
   selectComments = document.getElementById('selectComments');
-  
-  // 表格输入
-  tableInput = document.getElementById('tableInput');
 
   // 加载保存的Cookie
   loadSavedCookie();
@@ -73,7 +72,8 @@ function saveCookie(cookie) {
 
 // 绑定事件
 function bindEvents() {
-  if (importBtn) importBtn.addEventListener('click', importNote);
+  if (extractBtn) extractBtn.addEventListener('click', extractNote);
+  if (syncBtn) syncBtn.addEventListener('click', syncToTable);
   if (clearBtn) clearBtn.addEventListener('click', clearInput);
   if (openDocBtn) openDocBtn.addEventListener('click', openDocument);
   if (noteUrlInput) noteUrlInput.addEventListener('paste', handlePaste);
@@ -348,8 +348,8 @@ function openDocument() {
   showToast('打开飞书表格: ' + currentTableId);
 }
 
-// 导入笔记
-async function importNote() {
+// 提取笔记数据
+async function extractNote() {
   const url = noteUrlInput.value.trim();
   const cookie = cookieInput.value.trim();
   
@@ -371,8 +371,10 @@ async function importNote() {
   showLoading();
   
   try {
-    // 保存Cookie
-    saveCookie(cookie);
+    // 保存Cookie（如果用户选择保存）
+    if (saveCookieCheckbox && saveCookieCheckbox.checked) {
+      saveCookie(cookie);
+    }
     
     // 解析链接
     const noteId = parseNoteUrl(url);
@@ -382,25 +384,44 @@ async function importNote() {
       return;
     }
     
-    // 获取用户选择的内容
-    const selectedContent = getSelectedContent();
-    
     // 提取数据
     showToast('正在提取笔记数据...');
     const noteData = await extractNoteData(noteId, cookie);
     currentNoteData = noteData;
     
-    // 导入到当前飞书文档
-    showToast('正在导入到飞书文档...');
-    const tableId = await importToFeishuTable(noteData, selectedContent);
-    currentTableId = tableId;
-    
     // 显示结果
     showResult(noteData);
-    showToast('导入成功！');
+    showToast('数据提取成功！');
   } catch (error) {
-    console.error('导入失败:', error);
-    showToast('导入失败: ' + error.message);
+    console.error('提取失败:', error);
+    showToast('提取失败: ' + error.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+// 同步数据到表格
+async function syncToTable() {
+  if (!currentNoteData) {
+    showToast('请先提取数据');
+    return;
+  }
+  
+  showLoading();
+  
+  try {
+    // 获取用户选择的内容
+    const selectedContent = getSelectedContent();
+    
+    // 导入到当前飞书文档
+    showToast('正在同步到飞书文档...');
+    const tableId = await importToFeishuTable(currentNoteData, selectedContent);
+    currentTableId = tableId;
+    
+    showToast('同步成功！');
+  } catch (error) {
+    console.error('同步失败:', error);
+    showToast('同步失败: ' + error.message);
   } finally {
     hideLoading();
   }
