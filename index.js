@@ -853,14 +853,19 @@ async function scanTableForLinks() {
     if (!tableId) {
       tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
       console.log('使用默认表格ID:', tableId);
+      showToast('未输入表格ID，使用默认表格ID');
     }
     
     console.log('最终使用的表格ID:', tableId);
     
     // 尝试不同的API端点
     const apiEndpoints = [
+      // 表格API - 正确的端点格式
+      `https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/range`,
+      `https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/${tableId}/sheets/0/range`,
       `https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`,
       `https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/${tableId}/sheets/0/values`,
+      // 文档API
       `https://open.feishu.cn/open-apis/docs/v2/documents/${tableId}/sheets/0/values`
     ];
     
@@ -890,18 +895,35 @@ async function scanTableForLinks() {
         if (!response.ok) {
           const errorText = await response.text().catch(() => '无法获取错误信息');
           console.error('API请求失败:', response.status, errorText);
+          // 显示更详细的错误信息
+          if (response.status === 401) {
+            showToast('授权失败，请检查授权码是否有效');
+          } else if (response.status === 404) {
+            showToast('表格ID不存在，请检查表格ID是否正确');
+          } else if (response.status === 403) {
+            showToast('权限不足，授权码可能没有表格访问权限');
+          }
           continue; // 尝试下一个端点
         }
         
         const data = await response.json();
         console.log('API响应数据:', data);
         
-        if (!data.data || !data.data.values) {
-          console.error('API返回的数据格式不正确');
+        // 检查不同的数据结构
+        let rows = [];
+        if (data.data && data.data.values) {
+          rows = data.data.values;
+        } else if (data.data && data.data.range && data.data.range.values) {
+          rows = data.data.range.values;
+        } else if (data.values) {
+          rows = data.values;
+        }
+        
+        if (!rows || rows.length === 0) {
+          console.error('API返回的数据格式不正确或表格为空');
           continue; // 尝试下一个端点
         }
         
-        const rows = data.data.values;
         console.log('表格行数:', rows.length);
         
         // 查找链接列
@@ -939,6 +961,12 @@ async function scanTableForLinks() {
         break; // 成功，退出循环
       } catch (apiError) {
         console.error('API调用失败:', apiError);
+        // 显示网络错误信息
+        if (apiError.message.includes('Failed to fetch')) {
+          showToast('网络连接失败，请检查网络连接');
+        } else if (apiError.message.includes('CORS')) {
+          showToast('跨域访问被阻止，正在尝试其他方式');
+        }
         // 继续尝试下一个端点
       }
     }
@@ -946,6 +974,7 @@ async function scanTableForLinks() {
     // 如果所有API端点都失败，尝试使用飞书插件的HTTP API
     if (!success && window.lark && window.lark.http) {
       console.log('尝试使用飞书插件HTTP API');
+      showToast('尝试使用飞书插件API...');
       
       for (const apiUrl of apiEndpoints) {
         try {
@@ -964,12 +993,21 @@ async function scanTableForLinks() {
           if (larkResponse.code === 0 && larkResponse.data) {
             const data = larkResponse.data;
             
-            if (!data.data || !data.data.values) {
-              console.error('API返回的数据格式不正确');
+            // 检查不同的数据结构
+            let rows = [];
+            if (data.data && data.data.values) {
+              rows = data.data.values;
+            } else if (data.data && data.data.range && data.data.range.values) {
+              rows = data.data.range.values;
+            } else if (data.values) {
+              rows = data.values;
+            }
+            
+            if (!rows || rows.length === 0) {
+              console.error('API返回的数据格式不正确或表格为空');
               continue;
             }
             
-            const rows = data.data.values;
             console.log('表格行数:', rows.length);
             
             // 查找链接列
@@ -1005,6 +1043,13 @@ async function scanTableForLinks() {
             console.log('检测到的链接:', detectedLinks);
             success = true;
             break;
+          } else {
+            console.error('飞书API返回错误:', larkResponse.code, larkResponse.msg);
+            if (larkResponse.code === 401) {
+              showToast('授权失败，请检查授权码是否有效');
+            } else if (larkResponse.code === 404) {
+              showToast('表格ID不存在，请检查表格ID是否正确');
+            }
           }
         } catch (larkError) {
           console.error('飞书插件API调用失败:', larkError);
