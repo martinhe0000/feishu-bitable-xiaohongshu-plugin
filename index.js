@@ -96,6 +96,8 @@ function clearInput() {
 
 // 解析小红书笔记链接
 function parseNoteUrl(url) {
+  console.log('解析链接:', url);
+  
   // 提取笔记ID，支持多种链接格式
   const patterns = [
     /note\/(\w+)/,           // 基本格式
@@ -109,9 +111,12 @@ function parseNoteUrl(url) {
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
+      console.log('匹配成功:', pattern, '结果:', match[1]);
       return match[1];
     }
   }
+  
+  console.log('所有模式都匹配失败');
   return null;
 }
 
