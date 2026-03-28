@@ -849,21 +849,7 @@ async function scanTableForLinks() {
     let tableId = tableIdInput?.value?.trim() || '';
     console.log('用户输入的表格ID:', tableId);
     
-    // 如果用户没有输入表格ID，尝试获取当前文档信息
-    if (!tableId) {
-      try {
-        console.log('尝试获取当前文档信息');
-        const docInfo = await getCurrentDocumentInfo();
-        console.log('获取文档信息成功:', docInfo);
-        if (docInfo && docInfo.tableId) {
-          tableId = docInfo.tableId;
-        }
-      } catch (docError) {
-        console.log('获取文档信息失败，使用默认表格ID:', docError);
-      }
-    }
-    
-    // 如果仍然没有表格ID，使用默认值
+    // 如果用户没有输入表格ID，使用默认值
     if (!tableId) {
       tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
       console.log('使用默认表格ID:', tableId);
@@ -871,80 +857,97 @@ async function scanTableForLinks() {
     
     console.log('最终使用的表格ID:', tableId);
     
-    // 调用飞书API获取表格数据
-    console.log('准备调用飞书API获取表格数据');
-    const apiUrl = `https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`;
-    console.log('API URL:', apiUrl);
+    // 尝试不同的API端点
+    const apiEndpoints = [
+      `https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`,
+      `https://open.feishu.cn/open-apis/sheets/v2/spreadsheets/${tableId}/sheets/0/values`,
+      `https://open.feishu.cn/open-apis/docs/v2/documents/${tableId}/sheets/0/values`
+    ];
     
-    try {
-      // 尝试使用浏览器的fetch API
-      console.log('尝试使用浏览器fetch API');
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        credentials: 'include',
-        mode: 'cors'
-      });
+    let success = false;
+    
+    for (const apiUrl of apiEndpoints) {
+      console.log('尝试API端点:', apiUrl);
       
-      console.log('API响应状态:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '无法获取错误信息');
-        console.error('API请求失败:', response.status, errorText);
-        throw new Error(`API请求失败: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('API响应数据:', data);
-      
-      if (!data.data || !data.data.values) {
-        throw new Error('API返回的数据格式不正确');
-      }
-      
-      const rows = data.data.values;
-      console.log('表格行数:', rows.length);
-      
-      // 查找链接列
-      let linkColumnIndex = -1;
-      if (rows.length > 0) {
-        const headers = rows[0];
-        console.log('表格列标题:', headers);
-        linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
-      }
-      
-      if (linkColumnIndex === -1) {
-        showToast(`未找到标题为"${linkColumnTitle}"的列`);
-        hideLoading();
-        return;
-      }
-      
-      // 提取链接
-      detectedLinks = [];
-      for (let i = 1; i < rows.length; i++) {
-        const row = rows[i];
-        if (row && row[linkColumnIndex]) {
-          const link = row[linkColumnIndex].trim();
-          if (link.includes('xiaohongshu.com')) {
-            detectedLinks.push({
-              url: link,
-              rowIndex: i
-            });
+      try {
+        // 尝试使用浏览器的fetch API
+        console.log('尝试使用浏览器fetch API');
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          credentials: 'include',
+          mode: 'cors',
+          cache: 'no-cache'
+        });
+        
+        console.log('API响应状态:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => '无法获取错误信息');
+          console.error('API请求失败:', response.status, errorText);
+          continue; // 尝试下一个端点
+        }
+        
+        const data = await response.json();
+        console.log('API响应数据:', data);
+        
+        if (!data.data || !data.data.values) {
+          console.error('API返回的数据格式不正确');
+          continue; // 尝试下一个端点
+        }
+        
+        const rows = data.data.values;
+        console.log('表格行数:', rows.length);
+        
+        // 查找链接列
+        let linkColumnIndex = -1;
+        if (rows.length > 0) {
+          const headers = rows[0];
+          console.log('表格列标题:', headers);
+          linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
+        }
+        
+        if (linkColumnIndex === -1) {
+          showToast(`未找到标题为"${linkColumnTitle}"的列`);
+          hideLoading();
+          return;
+        }
+        
+        // 提取链接
+        detectedLinks = [];
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (row && row[linkColumnIndex]) {
+            const link = row[linkColumnIndex].trim();
+            if (link.includes('xiaohongshu.com')) {
+              detectedLinks.push({
+                url: link,
+                rowIndex: i
+              });
+            }
           }
         }
+        
+        showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
+        console.log('检测到的链接:', detectedLinks);
+        success = true;
+        break; // 成功，退出循环
+      } catch (apiError) {
+        console.error('API调用失败:', apiError);
+        // 继续尝试下一个端点
       }
+    }
+    
+    // 如果所有API端点都失败，尝试使用飞书插件的HTTP API
+    if (!success && window.lark && window.lark.http) {
+      console.log('尝试使用飞书插件HTTP API');
       
-      showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
-      console.log('检测到的链接:', detectedLinks);
-    } catch (apiError) {
-      console.error('API调用失败:', apiError);
-      
-      // 尝试使用飞书插件的HTTP API
-      if (window.lark && window.lark.http) {
-        console.log('尝试使用飞书插件HTTP API');
+      for (const apiUrl of apiEndpoints) {
         try {
           const larkResponse = await window.lark.http.request({
             url: apiUrl,
@@ -953,7 +956,7 @@ async function scanTableForLinks() {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
-            timeout: 10000
+            timeout: 15000
           });
           
           console.log('飞书API响应:', larkResponse);
@@ -962,7 +965,8 @@ async function scanTableForLinks() {
             const data = larkResponse.data;
             
             if (!data.data || !data.data.values) {
-              throw new Error('API返回的数据格式不正确');
+              console.error('API返回的数据格式不正确');
+              continue;
             }
             
             const rows = data.data.values;
@@ -999,15 +1003,18 @@ async function scanTableForLinks() {
             
             showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
             console.log('检测到的链接:', detectedLinks);
-            return;
+            success = true;
+            break;
           }
         } catch (larkError) {
           console.error('飞书插件API调用失败:', larkError);
         }
       }
-      
-      // 所有方法都失败，提示用户使用手动输入
-      throw new Error(`API调用失败: ${apiError.message}。请尝试使用"手动输入链接"功能。`);
+    }
+    
+    // 如果所有方法都失败
+    if (!success) {
+      throw new Error('无法连接到飞书API，请检查网络连接、授权码和表格ID是否正确');
     }
   } catch (error) {
     console.error('扫描表格失败:', error);
