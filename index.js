@@ -101,17 +101,28 @@ function showToast(message, duration = 2000) {
   }
 }
 
+// 更新加载消息
+function updateLoadingMessage(message) {
+  const loadingMessage = document.getElementById('loadingMessage');
+  if (loadingMessage) {
+    loadingMessage.textContent = message;
+  }
+}
+
 // 显示加载状态
-function showLoading() {
+function showLoading(message = '正在处理数据...') {
   if (loadingSection) loadingSection.style.display = 'block';
-  if (importBtn) importBtn.disabled = true;
+  if (extractBtn) extractBtn.disabled = true;
+  if (syncBtn) syncBtn.disabled = true;
   if (resultSection) resultSection.style.display = 'none';
+  updateLoadingMessage(message);
 }
 
 // 隐藏加载状态
 function hideLoading() {
   if (loadingSection) loadingSection.style.display = 'none';
-  if (importBtn) importBtn.disabled = false;
+  if (extractBtn) extractBtn.disabled = false;
+  if (syncBtn) syncBtn.disabled = false;
 }
 
 // 显示结果
@@ -368,7 +379,7 @@ async function extractNote() {
     return;
   }
   
-  showLoading();
+  showLoading('正在解析链接...');
   
   try {
     // 保存Cookie（如果用户选择保存）
@@ -385,11 +396,13 @@ async function extractNote() {
     }
     
     // 提取数据
+    updateLoadingMessage('正在提取笔记数据...');
     showToast('正在提取笔记数据...');
     const noteData = await extractNoteData(noteId, cookie);
     currentNoteData = noteData;
     
     // 显示结果
+    updateLoadingMessage('正在显示结果...');
     showResult(noteData);
     showToast('数据提取成功！');
   } catch (error) {
@@ -407,17 +420,20 @@ async function syncToTable() {
     return;
   }
   
-  showLoading();
+  showLoading('正在获取文档信息...');
   
   try {
     // 获取用户选择的内容
+    updateLoadingMessage('正在准备数据...');
     const selectedContent = getSelectedContent();
     
     // 导入到当前飞书文档
+    updateLoadingMessage('正在同步到飞书文档...');
     showToast('正在同步到飞书文档...');
     const tableId = await importToFeishuTable(currentNoteData, selectedContent);
     currentTableId = tableId;
     
+    updateLoadingMessage('同步完成...');
     showToast('同步成功！');
   } catch (error) {
     console.error('同步失败:', error);
