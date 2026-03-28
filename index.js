@@ -826,8 +826,19 @@ async function scanTableForLinks() {
     
     // 获取飞书表格数据
     const token = await getFeishuAccessToken();
-    const docInfo = await getCurrentDocumentInfo();
-    const tableId = docInfo.tableId || 'tbl_7b01b389b51b211c';
+    
+    // 尝试获取当前文档信息，如果失败则使用默认表格ID
+    let tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
+    try {
+      const docInfo = await getCurrentDocumentInfo();
+      if (docInfo && docInfo.tableId) {
+        tableId = docInfo.tableId;
+      }
+    } catch (docError) {
+      console.log('获取文档信息失败，使用默认表格ID:', docError);
+    }
+    
+    console.log('使用的表格ID:', tableId);
     
     // 调用飞书API获取表格数据
     const response = await fetch(`https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`, {
@@ -839,16 +850,26 @@ async function scanTableForLinks() {
     });
     
     if (!response.ok) {
-      throw new Error(`API请求失败: ${response.status}`);
+      const errorText = await response.text().catch(() => '无法获取错误信息');
+      console.error('API请求失败:', response.status, errorText);
+      throw new Error(`API请求失败: ${response.status} - ${errorText}`);
     }
     
     const data = await response.json();
+    console.log('API响应数据:', data);
+    
+    if (!data.data || !data.data.values) {
+      throw new Error('API返回的数据格式不正确');
+    }
+    
     const rows = data.data.values;
+    console.log('表格行数:', rows.length);
     
     // 查找链接列
     let linkColumnIndex = -1;
     if (rows.length > 0) {
       const headers = rows[0];
+      console.log('表格列标题:', headers);
       linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
     }
     
@@ -862,7 +883,7 @@ async function scanTableForLinks() {
     detectedLinks = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (row[linkColumnIndex]) {
+      if (row && row[linkColumnIndex]) {
         const link = row[linkColumnIndex].trim();
         if (link.includes('xiaohongshu.com')) {
           detectedLinks.push({
