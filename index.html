@@ -33,6 +33,7 @@
       min-height: 580px;
       box-sizing: border-box;
       overflow-y: auto;
+      max-height: 100%;
     }
 
     .header {
@@ -326,14 +327,6 @@
       </div>
     </div>
 
-    <div class="input-section">
-      <label class="input-label" for="noteUrl">小红书笔记链接</label>
-      <input type="text" id="noteUrl" class="url-input" placeholder="请粘贴小红书笔记链接">
-      <div class="config-note">
-        提示：支持多种小红书链接格式，如 https://www.xiaohongshu.com/explore/69c625bc000000002302002b
-      </div>
-    </div>
-
     <div class="cookie-section">
       <label class="input-label" for="feishuTokenInput">飞书授权码</label>
       <input type="text" id="feishuTokenInput" class="url-input" placeholder="请输入飞书授权码">
@@ -396,26 +389,26 @@
     </div>
 
     <div class="config-section">
-      <label class="input-label">链接输入</label>
+      <label class="input-label">表格配置</label>
       <div class="config-item">
-        <label style="display: block; margin-bottom: 4px; font-size: 14px;">小红书笔记链接</label>
-        <input type="text" id="noteUrl" class="url-input" placeholder="请粘贴小红书笔记链接">
+        <label style="display: block; margin-bottom: 4px; font-size: 14px;">链接列标题</label>
+        <input type="text" id="linkColumnTitle" class="url-input" placeholder="例如：小红书链接" value="小红书链接">
       </div>
       <div class="config-item" style="margin-top: 12px;">
-        <label style="display: block; margin-bottom: 4px; font-size: 14px;">批量链接（可选，每行一个）</label>
-        <textarea id="batchLinks" class="cookie-textarea" placeholder="请输入多个小红书链接，每行一个"></textarea>
+        <label style="display: block; margin-bottom: 4px; font-size: 14px;">表格ID（可选）</label>
+        <input type="text" id="tableIdInput" class="url-input" placeholder="例如：tbl_7b01b389b51b211c">
       </div>
       <div class="config-note" style="margin-top: 4px;">
-        提示：支持直接输入单个链接或批量输入多个链接
+        提示：插件会自动查找包含此标题的列，并处理该列中的小红书链接
       </div>
     </div>
 
-    <button class="btn btn-primary" id="extractBtn">
-      📝 提取单条笔记
+    <button class="btn btn-primary" id="scanTableBtn">
+      🔍 扫描表格链接
     </button>
 
-    <button class="btn btn-primary" id="batchExtractBtn">
-      📋 批量提取笔记
+    <button class="btn btn-secondary" id="processAllBtn">
+      📤 处理所有链接
     </button>
 
     <button class="btn btn-secondary" id="clearBtn">
