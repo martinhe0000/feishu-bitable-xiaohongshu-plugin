@@ -105,13 +105,22 @@ function showToast(message, duration = 2000) {
 function updateLoadingMessage(message) {
   const loadingMessage = document.getElementById('loadingMessage');
   if (loadingMessage) {
+    console.log('更新加载消息:', message);
     loadingMessage.textContent = message;
+  } else {
+    console.error('未找到loadingMessage元素');
   }
 }
 
 // 显示加载状态
 function showLoading(message = '正在处理数据...') {
-  if (loadingSection) loadingSection.style.display = 'block';
+  console.log('显示加载状态:', message);
+  if (loadingSection) {
+    loadingSection.style.display = 'block';
+    console.log('loadingSection显示状态:', loadingSection.style.display);
+  } else {
+    console.error('未找到loadingSection元素');
+  }
   if (extractBtn) extractBtn.disabled = true;
   if (syncBtn) syncBtn.disabled = true;
   if (resultSection) resultSection.style.display = 'none';
@@ -143,6 +152,7 @@ function showResult(data) {
 // 清空输入
 function clearInput() {
   if (noteUrlInput) noteUrlInput.value = '';
+  // 保留Cookie，不清除
   if (resultSection) resultSection.style.display = 'none';
   currentNoteData = null;
   currentTableId = null;
