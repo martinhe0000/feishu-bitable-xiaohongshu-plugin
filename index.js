@@ -877,12 +877,17 @@ async function scanTableForLinks() {
     console.log('API URL:', apiUrl);
     
     try {
+      // 尝试使用浏览器的fetch API
+      console.log('尝试使用浏览器fetch API');
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include',
+        mode: 'cors'
       });
       
       console.log('API响应状态:', response.status);
@@ -936,7 +941,73 @@ async function scanTableForLinks() {
       console.log('检测到的链接:', detectedLinks);
     } catch (apiError) {
       console.error('API调用失败:', apiError);
-      throw new Error(`API调用失败: ${apiError.message}`);
+      
+      // 尝试使用飞书插件的HTTP API
+      if (window.lark && window.lark.http) {
+        console.log('尝试使用飞书插件HTTP API');
+        try {
+          const larkResponse = await window.lark.http.request({
+            url: apiUrl,
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 10000
+          });
+          
+          console.log('飞书API响应:', larkResponse);
+          
+          if (larkResponse.code === 0 && larkResponse.data) {
+            const data = larkResponse.data;
+            
+            if (!data.data || !data.data.values) {
+              throw new Error('API返回的数据格式不正确');
+            }
+            
+            const rows = data.data.values;
+            console.log('表格行数:', rows.length);
+            
+            // 查找链接列
+            let linkColumnIndex = -1;
+            if (rows.length > 0) {
+              const headers = rows[0];
+              console.log('表格列标题:', headers);
+              linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
+            }
+            
+            if (linkColumnIndex === -1) {
+              showToast(`未找到标题为"${linkColumnTitle}"的列`);
+              hideLoading();
+              return;
+            }
+            
+            // 提取链接
+            detectedLinks = [];
+            for (let i = 1; i < rows.length; i++) {
+              const row = rows[i];
+              if (row && row[linkColumnIndex]) {
+                const link = row[linkColumnIndex].trim();
+                if (link.includes('xiaohongshu.com')) {
+                  detectedLinks.push({
+                    url: link,
+                    rowIndex: i
+                  });
+                }
+              }
+            }
+            
+            showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
+            console.log('检测到的链接:', detectedLinks);
+            return;
+          }
+        } catch (larkError) {
+          console.error('飞书插件API调用失败:', larkError);
+        }
+      }
+      
+      // 所有方法都失败，提示用户使用手动输入
+      throw new Error(`API调用失败: ${apiError.message}。请尝试使用"手动输入链接"功能。`);
     }
   } catch (error) {
     console.error('扫描表格失败:', error);
