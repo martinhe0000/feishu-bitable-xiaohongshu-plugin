@@ -1,0 +1,14 @@
+{
+  "name": "贺校长的小红书助手",
+  "version": "1.0.0",
+  "description": "通过小红书笔记链接导入数据到飞书文档",
+  "manifest_version": 2,
+  "permissions": [
+    "bitable:app",
+    "bitable:table:read",
+    "bitable:table:write",
+    "docs:document:write"
+  ],
+  "main": "index.html",
+  "icon": "icon.png"
+}
