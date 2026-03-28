@@ -51,8 +51,24 @@ function init() {
   // 表格输入
   tableInput = document.getElementById('tableInput');
 
+  // 加载保存的Cookie
+  loadSavedCookie();
+
   // 绑定事件
   bindEvents();
+}
+
+// 加载保存的Cookie
+function loadSavedCookie() {
+  const savedCookie = localStorage.getItem('xiaohongshu_cookie');
+  if (savedCookie) {
+    cookieInput.value = savedCookie;
+  }
+}
+
+// 保存Cookie
+function saveCookie(cookie) {
+  localStorage.setItem('xiaohongshu_cookie', cookie);
 }
 
 // 绑定事件
@@ -241,8 +257,8 @@ async function extractNoteData(noteId, cookie) {
 }
 
 // 模拟获取飞书表格的关键词
-async function getTableKeywords(tablePosition) {
-  // 实际项目中，这里应该调用飞书API获取表格的列标题
+async function getTableKeywords() {
+  // 实际项目中，这里应该调用飞书API获取当前文档中表格的列标题
   // 这里使用模拟数据
   return [
     '标题', '作者', '发布时间', '笔记类型', '封面链接', '文案内容', '点赞', '收藏', '转发', '评论'
@@ -279,25 +295,44 @@ function mapDataToTable(data, selectedContent, tableKeywords) {
 }
 
 // 导入数据到飞书表格
-async function importToFeishuTable(data, selectedContent, tablePosition) {
+async function importToFeishuTable(data, selectedContent) {
   try {
+    // 获取当前飞书文档信息
+    showToast('正在获取当前文档信息...');
+    const currentDocInfo = await getCurrentDocumentInfo();
+    
     // 获取表格关键词
     showToast('正在获取表格信息...');
-    const tableKeywords = await getTableKeywords(tablePosition);
+    const tableKeywords = await getTableKeywords();
     
     // 映射数据到表格
     showToast('正在映射数据...');
     const mappedData = mapDataToTable(data, selectedContent, tableKeywords);
     
-    // 实际项目中，这里应该调用飞书API导入数据
+    // 实际项目中，这里应该调用飞书API导入数据到当前文档
     // 这里使用模拟数据
-    const tableId = 'table_' + Date.now();
-    console.log('导入到飞书表格:', tableId);
+    const tableId = currentDocInfo?.docId || 'table_' + Date.now();
+    console.log('导入到飞书文档:', tableId);
     console.log('映射后的数据:', mappedData);
-    console.log('表格位置:', tablePosition);
     return tableId;
   } catch (error) {
     console.error('导入到飞书表格失败:', error);
+    throw error;
+  }
+}
+
+// 获取当前飞书文档信息
+async function getCurrentDocumentInfo() {
+  try {
+    // 实际项目中，这里应该调用飞书API获取当前文档信息
+    // 这里使用模拟数据
+    return {
+      docId: 'doc_' + Date.now(),
+      title: '当前飞书文档',
+      tableId: 'tbl_' + Date.now()
+    };
+  } catch (error) {
+    console.error('获取当前文档信息失败:', error);
     throw error;
   }
 }
@@ -317,7 +352,6 @@ function openDocument() {
 async function importNote() {
   const url = noteUrlInput.value.trim();
   const cookie = cookieInput.value.trim();
-  const tablePosition = tableInput.value.trim();
   
   if (!url) {
     showToast('请输入小红书笔记链接');
@@ -334,14 +368,12 @@ async function importNote() {
     return;
   }
   
-  if (!tablePosition) {
-    showToast('请输入表格位置');
-    return;
-  }
-  
   showLoading();
   
   try {
+    // 保存Cookie
+    saveCookie(cookie);
+    
     // 解析链接
     const noteId = parseNoteUrl(url);
     if (!noteId) {
@@ -358,9 +390,9 @@ async function importNote() {
     const noteData = await extractNoteData(noteId, cookie);
     currentNoteData = noteData;
     
-    // 导入到飞书表格
-    showToast('正在导入到飞书表格...');
-    const tableId = await importToFeishuTable(noteData, selectedContent, tablePosition);
+    // 导入到当前飞书文档
+    showToast('正在导入到飞书文档...');
+    const tableId = await importToFeishuTable(noteData, selectedContent);
     currentTableId = tableId;
     
     // 显示结果
