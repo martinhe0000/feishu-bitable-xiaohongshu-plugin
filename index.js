@@ -574,9 +574,11 @@ async function getFeishuAccessToken() {
     // 优先使用用户输入的授权码
     const userToken = feishuTokenInput?.value?.trim();
     if (userToken) {
+      console.log('使用用户输入的授权码');
       // 保存授权码（如果用户选择保存）
       if (saveFeishuTokenCheckbox && saveFeishuTokenCheckbox.checked) {
         saveFeishuToken(userToken);
+        console.log('授权码已保存');
       }
       feishuAccessToken = userToken;
       return userToken;
@@ -585,18 +587,21 @@ async function getFeishuAccessToken() {
     // 尝试从localStorage获取保存的令牌
     const savedToken = localStorage.getItem('feishu_access_token');
     if (savedToken) {
+      console.log('使用保存的授权码');
       feishuAccessToken = savedToken;
       return savedToken;
     }
     
     // 尝试使用飞书插件API
     if (window.lark) {
+      console.log('尝试使用飞书插件API获取令牌');
       // 检查是否有授权
       if (window.lark.auth) {
         try {
           // 尝试获取用户访问令牌
           const userToken = await window.lark.auth.getUserToken();
           if (userToken) {
+            console.log('获取用户令牌成功');
             feishuAccessToken = userToken;
             return userToken;
           }
@@ -607,6 +612,7 @@ async function getFeishuAccessToken() {
         // 尝试获取租户访问令牌
         try {
           const tenantToken = await window.lark.auth.getTenantToken();
+          console.log('获取租户令牌成功');
           feishuAccessToken = tenantToken;
           return tenantToken;
         } catch (tenantError) {
@@ -619,6 +625,7 @@ async function getFeishuAccessToken() {
                 scopes: ['docs:document', 'sheets:spreadsheet']
               });
               if (authResult && authResult.token) {
+                console.log('请求授权成功');
                 feishuAccessToken = authResult.token;
                 return authResult.token;
               }
@@ -627,7 +634,11 @@ async function getFeishuAccessToken() {
             }
           }
         }
+      } else {
+        console.log('飞书插件API不存在');
       }
+    } else {
+      console.log('window.lark不存在');
     }
     
     // 所有方法都失败，提示用户输入授权码
@@ -813,6 +824,8 @@ async function scanTableForLinks() {
   showLoading('正在扫描表格...');
   
   try {
+    console.log('开始扫描表格');
+    
     const cookie = cookieInput.value.trim();
     if (!cookie) {
       showToast('请先输入小红书Cookie');
@@ -828,15 +841,20 @@ async function scanTableForLinks() {
     }
     
     // 获取飞书表格数据
+    console.log('获取飞书访问令牌');
     const token = await getFeishuAccessToken();
+    console.log('获取飞书访问令牌成功');
     
     // 优先使用用户输入的表格ID
     let tableId = tableIdInput?.value?.trim() || '';
+    console.log('用户输入的表格ID:', tableId);
     
     // 如果用户没有输入表格ID，尝试获取当前文档信息
     if (!tableId) {
       try {
+        console.log('尝试获取当前文档信息');
         const docInfo = await getCurrentDocumentInfo();
+        console.log('获取文档信息成功:', docInfo);
         if (docInfo && docInfo.tableId) {
           tableId = docInfo.tableId;
         }
@@ -848,66 +866,78 @@ async function scanTableForLinks() {
     // 如果仍然没有表格ID，使用默认值
     if (!tableId) {
       tableId = 'tbl_7b01b389b51b211c'; // 默认表格ID
+      console.log('使用默认表格ID:', tableId);
     }
     
-    console.log('使用的表格ID:', tableId);
+    console.log('最终使用的表格ID:', tableId);
     
     // 调用飞书API获取表格数据
-    const response = await fetch(`https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    console.log('准备调用飞书API获取表格数据');
+    const apiUrl = `https://open.feishu.cn/open-apis/sheets/v3/spreadsheets/${tableId}/sheets/0/values`;
+    console.log('API URL:', apiUrl);
+    
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('API响应状态:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '无法获取错误信息');
+        console.error('API请求失败:', response.status, errorText);
+        throw new Error(`API请求失败: ${response.status} - ${errorText}`);
       }
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '无法获取错误信息');
-      console.error('API请求失败:', response.status, errorText);
-      throw new Error(`API请求失败: ${response.status} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log('API响应数据:', data);
-    
-    if (!data.data || !data.data.values) {
-      throw new Error('API返回的数据格式不正确');
-    }
-    
-    const rows = data.data.values;
-    console.log('表格行数:', rows.length);
-    
-    // 查找链接列
-    let linkColumnIndex = -1;
-    if (rows.length > 0) {
-      const headers = rows[0];
-      console.log('表格列标题:', headers);
-      linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
-    }
-    
-    if (linkColumnIndex === -1) {
-      showToast(`未找到标题为"${linkColumnTitle}"的列`);
-      hideLoading();
-      return;
-    }
-    
-    // 提取链接
-    detectedLinks = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (row && row[linkColumnIndex]) {
-        const link = row[linkColumnIndex].trim();
-        if (link.includes('xiaohongshu.com')) {
-          detectedLinks.push({
-            url: link,
-            rowIndex: i
-          });
+      
+      const data = await response.json();
+      console.log('API响应数据:', data);
+      
+      if (!data.data || !data.data.values) {
+        throw new Error('API返回的数据格式不正确');
+      }
+      
+      const rows = data.data.values;
+      console.log('表格行数:', rows.length);
+      
+      // 查找链接列
+      let linkColumnIndex = -1;
+      if (rows.length > 0) {
+        const headers = rows[0];
+        console.log('表格列标题:', headers);
+        linkColumnIndex = headers.findIndex(header => header.includes(linkColumnTitle));
+      }
+      
+      if (linkColumnIndex === -1) {
+        showToast(`未找到标题为"${linkColumnTitle}"的列`);
+        hideLoading();
+        return;
+      }
+      
+      // 提取链接
+      detectedLinks = [];
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (row && row[linkColumnIndex]) {
+          const link = row[linkColumnIndex].trim();
+          if (link.includes('xiaohongshu.com')) {
+            detectedLinks.push({
+              url: link,
+              rowIndex: i
+            });
+          }
         }
       }
+      
+      showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
+      console.log('检测到的链接:', detectedLinks);
+    } catch (apiError) {
+      console.error('API调用失败:', apiError);
+      throw new Error(`API调用失败: ${apiError.message}`);
     }
-    
-    showToast(`成功扫描到 ${detectedLinks.length} 个小红书链接`);
-    console.log('检测到的链接:', detectedLinks);
   } catch (error) {
     console.error('扫描表格失败:', error);
     showToast('扫描表格失败: ' + error.message);
