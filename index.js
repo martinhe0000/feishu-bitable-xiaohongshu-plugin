@@ -225,39 +225,53 @@ function parseNoteUrl(url) {
 // 提取小红书笔记数据
 async function extractNoteData(noteId, cookie) {
   try {
+    console.log('开始提取数据，noteId:', noteId);
+    console.log('Cookie长度:', cookie ? cookie.length : 0);
+    
     // 构建请求头
     const headers = {
-      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'zh-CN,zh;q=0.9',
+      'Connection': 'keep-alive',
       'Cookie': cookie,
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Host': 'www.xiaohongshu.com',
       'Referer': `https://www.xiaohongshu.com/note/${noteId}`,
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'X-Requested-With': 'XMLHttpRequest'
     };
 
     // 发送请求到小红书API
+    console.log('发送请求到小红书API...');
     const response = await fetch(`https://www.xiaohongshu.com/api/sns/web/v1/feed?note_ids=${noteId}`, {
       method: 'GET',
       headers: headers,
-      credentials: 'include'
+      credentials: 'include',
+      mode: 'cors'
     });
 
+    console.log('响应状态:', response.status);
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      console.error('HTTP错误响应:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
     const data = await response.json();
+    console.log('API响应数据:', data);
     
     // 检查响应数据结构
     if (!data.data || !data.data.items || data.data.items.length === 0) {
-      throw new Error('无法获取笔记数据');
+      throw new Error('无法获取笔记数据，API返回空数据');
     }
 
     const note = data.data.items[0].note;
+    console.log('提取到的笔记数据:', note);
     
     // 提取数据
     return {
       title: note.title || '无标题',
-      author: note.user.nickname || '未知作者',
+      author: note.user?.nickname || '未知作者',
       publishTime: new Date(note.time * 1000).toISOString().split('T')[0] || '未知时间',
       noteType: note.type === 1 ? '图文笔记' : note.type === 2 ? '视频笔记' : '未知类型',
       content: note.desc || '无内容',
@@ -270,6 +284,12 @@ async function extractNoteData(noteId, cookie) {
     };
   } catch (error) {
     console.error('提取小红书数据失败:', error);
+    // 提供更详细的错误信息
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('网络请求失败，请检查网络连接或Cookie是否有效');
+    } else if (error.message.includes('HTTP error')) {
+      throw new Error('API请求失败，可能是Cookie已过期或无效');
+    }
     // 如果API请求失败，返回错误信息
     throw new Error(`提取数据失败: ${error.message}`);
   }
