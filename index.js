@@ -96,10 +96,19 @@ function clearInput() {
 
 // 解析小红书笔记链接
 function parseNoteUrl(url) {
-  // 提取笔记ID
-  const match = url.match(/note\/(\w+)/);
-  if (match) {
-    return match[1];
+  // 提取笔记ID，支持多种链接格式
+  const patterns = [
+    /note\/(\w+)/,           // 基本格式
+    /note\/(\w+)\?/,          // 带查询参数
+    /note\/(\w+)\/?/,         // 末尾可能有斜杠
+    /note\/(\w+)\/detail/      // 可能包含detail路径
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      return match[1];
+    }
   }
   return null;
 }
