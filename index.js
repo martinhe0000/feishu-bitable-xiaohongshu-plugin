@@ -101,7 +101,9 @@ function parseNoteUrl(url) {
     /note\/(\w+)/,           // 基本格式
     /note\/(\w+)\?/,          // 带查询参数
     /note\/(\w+)\/?/,         // 末尾可能有斜杠
-    /note\/(\w+)\/detail/      // 可能包含detail路径
+    /note\/(\w+)\/detail/,      // 可能包含detail路径
+    /explore\/(\w+)/,          // explore页面格式
+    /explore\/(\w+)\?/          // 带查询参数的explore页面
   ];
   
   for (const pattern of patterns) {
